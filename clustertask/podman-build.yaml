@@ -1,0 +1,55 @@
+apiVersion: tekton.dev/v1beta1
+kind: ClusterTask
+metadata:
+  annotations:
+    tekton.dev/categories: Build Tools
+    tekton.dev/displayName: image build test
+    tekton.dev/pipelines.minVersion: 0.38.0
+    tekton.dev/platforms: linux/amd64,linux/s390x,linux/ppc64le,linux/arm64
+    tekton.dev/tags: build-tool
+  labels:
+    app.kubernetes.io/version: "0.9"
+  name: buildtask
+spec:
+  description: docker image build task test
+  params:
+  - default: docker.io
+    description: harbor registry url
+    name: url
+    type: string
+  - default: image/image
+    description: image name
+    name: image
+    type: string
+  - default: latest
+    description: image tag
+    name: tag
+    type: string
+  - default: "true"
+    name: tls
+    type: string
+  steps:
+  - image: quay.io/podman/stable
+    name: image-build
+    resources: {}
+    script: |
+      #!/usr/bin/env bash
+
+       echo "go $(workspaces.source.path) now!!"
+      cd $(workspaces.source.path)
+      ls -l
+      ./build-services.sh $(params.tag)  $(params.url)/$(params.image)
+      podman login $(params.url) -u admin -p admin
+      podman push $(params.url)/$(params.image):$(params.tag) --tls-verify=$(params.tls)
+      rm -rf ./reviews/reviews-application/build
+      rm -rf ./reviews/reviews-wlpcfg/servers/LibertyProjectServer/apps
+      rm -rf .scannerwork/
+      rm -rf .git/
+    securityContext:
+      privileged: true
+  workspaces:
+  - description: build source
+    name: source
+  - description: build file
+    name: build-pvc
+    mountPath: /root/buildfile
