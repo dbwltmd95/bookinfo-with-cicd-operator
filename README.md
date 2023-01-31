@@ -13,6 +13,22 @@
 - [<span style='color:yellow'>bookinfo source</span>](https://git.jhcloud.kr/junghun_byeon/bookinfo.git)
 - [<span style='color:yellow'>ClusterTask</span>](https://git.jhcloud.kr/junghun_byeon/bookinfo-cicd-tmaxcloud/src/branch/main/clustertask)
 - [<span style='color:yellow'>Template</span>](https://git.jhcloud.kr/junghun_byeon/bookinfo-cicd-tmaxcloud/src/branch/main/template)
+- trivy check task를 위한 pvc 1개 (Optional)
+  - 사용을 원치 않을 경우 template에서 해당 단계 삭제 (추천)
+```
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: trivy-db
+  namespace: 입력
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: nfs
+```
 
 ## Gitlab Porject 생성
 ![01](./img/01.png)
