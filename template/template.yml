@@ -1,0 +1,480 @@
+apiVersion: tmax.io/v1
+kind: ClusterTemplate
+metadata:
+  labels:
+    cicd-template-test: reviews
+  name: tmaxcloud-platofrmps-template
+categories:
+  - reviews
+imageUrl: >-
+  https://static.wixstatic.com/media/adcb2b_6acdb885bf744458bf152ab5854621cd~mv2.jpg/v1/fill/w_562,h_528,al_c,lg_1,q_80,enc_auto/adcb2b_6acdb885bf744458bf152ab5854621cd~mv2.jpg
+longDescription: TmaxCloud CI/CD Test Sample
+markdownDescription: reviews-test-template
+objectKinds:
+  - PersistentVolumeClaim
+  - ConfigMap
+  - Secret
+  - Secret
+  - RoleBinding
+  - IntegrationConfig
+objects:
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      name: 'cicd-pvc-${APP_NAME}'
+    spec:
+      accessModes:
+        - ReadWriteMany
+      resources:
+        requests:
+          storage: 1Gi
+      storageClassName: '${STORAGE_CLASS}'
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      name: 'build-pvc-${APP_NAME}'
+    spec:
+      accessModes:
+        - ReadWriteMany
+      resources:
+        requests:
+          storage: 1Gi
+      storageClassName: '${STORAGE_CLASS}'
+  - apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: argocd-env-configmap
+    data:
+      ARGOCD_SERVER: '${ARGOCD_URL}'
+  - apiVersion: v1
+    kind: Secret
+    metadata:
+      name: argocd-env-secret
+    data:
+      ARGOCD_PASSWORD: '${ARGOPASS}'
+      ARGOCD_USERNAME: '${ARGOUSER}'
+  - apiVersion: v1
+    kind: Secret
+    metadata:
+      name: my-basic-auth-secret
+    stringData:
+      .git-credentials: |
+        https://${GITID}:${GITPWD}@${GIT_API_URL}
+      .gitconfig: |
+        [credential]
+          helper = store
+        [user]
+          name = Administrator
+          email = admin@example.com
+        [http]
+          sslVerify = true
+    type: Opaque
+  - apiVersion: rbac.authorization.k8s.io/v1
+    kind: RoleBinding
+    metadata:
+      name: '${APP_NAME}-binding'
+    roleRef:
+      kind: ClusterRole
+      apiGroup: rbac.authorization.k8s.io
+      name: cicd-example-role
+    subjects:
+      - kind: ServiceAccount
+        name: '${APP_NAME}-config-sa'
+  - apiVersion: cicd.tmax.io/v1
+    kind: IntegrationConfig
+    metadata:
+      labels:
+        app: '${APP_NAME}'
+      name: '${APP_NAME}-config'
+    spec:
+      git:
+        apiUrl: 'https://${GIT_API_URL}'
+        repository: '${GIT_REPOSITORY}'
+        token:
+          valueFrom:
+            secretKeyRef:
+              key: token
+              name: '${GIT_TOKEN_SECRET}'
+        type: '${GIT_TYPE}'
+      jobs:
+        postSubmit:
+          - name: git-clone
+            tektonTask:
+              params:
+                - name: url
+                  stringVal: 'https://${GIT_API_URL}/${GIT_REPOSITORY}'
+                - name: revision
+                  stringVal: '${GIT_BRANCH}'
+                - name: deleteExisting
+                  stringVal: 'false'
+                - name: sslVerify
+                  stringVal: 'true'
+              taskRef:
+                local:
+                  kind: ClusterTask
+                  name: git-clone
+              workspaces:
+                - name: output
+                  workspace: s2i
+            notification:
+              onSuccess:
+                slack:
+                  url: https://hooks.slack.com/services/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
+                  message: "현재 진행중인 PipelineRun : ($INTEGRATION_JOB_NAME)\n현재 단계 : $JOB_NAME\n상태 : 완료"
+              onFailure:
+                slack:
+                  url: https://hooks.slack.com/services/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
+                  message: "현재 진행중인 PipelineRun : ($INTEGRATION_JOB_NAME)\n현재 단계 : $JOB_NAME\n상태 : 실패"
+          - after:
+              - git-clone
+            name: sonarqube-scanner
+            tektonTask:
+              workspaces:
+                - name: source
+                  workspace: s2i
+              params:
+                - name: SONAR_HOST_URL
+                  stringVal: '${SONARURL}'
+                - name: SONAR_PROJECT_KEY
+                  stringVal: '${PROJECTKEY}'
+                - name: PROJECT_VERSION
+                  stringVal: '${PROJECTVERSION}'
+                - name: SOURCE_TO_SCAN
+                  stringVal: '${SOURCEDIR}'
+                - name: SONAR_ORGANIZATION
+                  stringVal: "master"
+                - name: SONAR_LOGIN_KEY
+                  stringVal: "admin"
+                - name: SONAR_PASSWORD_KEY
+                  stringVal: "tmax@23!!"
+              taskRef:
+                local:
+                  kind: ClusterTask
+                  name: sonarqube-scanner
+            notification:
+              onSuccess:
+                slack:
+                  url: https://hooks.slack.com/services/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
+                  message: "현재 진행중인 PipelineRun : ($INTEGRATION_JOB_NAME)\n현재 단계 : $JOB_NAME\n상태 : 완료"
+              onFailure:
+                slack:
+                  url: https://hooks.slack.com/services/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
+                  message: "현재 진행중인 PipelineRun : ($INTEGRATION_JOB_NAME)\n현재 단계 : $JOB_NAME\n상태 : 실패"
+          - after:
+              - sonarqube-scanner
+            name: podman-build
+            tektonTask:
+              params:
+                - name: url
+                  stringVal: '${IMAGE_URL}'
+                - name: image
+                  stringVal: '${IMAGE_NAME}'
+                - name: tag
+                  stringVal: $(tasks.git-clone.results.commit)
+                - name: tls
+                  stringVal: 'false'
+              taskRef:
+                local:
+                  kind: ClusterTask
+                  name: buildtask
+              workspaces:
+                - name: source
+                  workspace: s2i
+                - name: build-pvc
+                  workspace: build-pvc
+            notification:
+              onSuccess:
+                slack:
+                  url: https://hooks.slack.com/services/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
+                  message: "현재 진행중인 PipelineRun : ($INTEGRATION_JOB_NAME)\n현재 단계 : $JOB_NAME\n상태 : 완료"
+              onFailure:
+                slack:
+                  url: https://hooks.slack.com/services/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
+                  message: "현재 진행중인 PipelineRun : ($INTEGRATION_JOB_NAME)\n현재 단계 : $JOB_NAME\n상태 : 실패"
+          - after:
+              - podman-build
+            name: trivy-check
+            tektonTask:
+              params:
+                - name: ARGS
+                  arrayVal: ["image"]
+                - name: IMAGE_PATH
+                  stringVal: "${IMAGE_URL}/${IMAGE_NAME}:$(tasks.git-clone.results.commit)"
+              workspaces:
+                - name: manifest-dir
+                  workspace: trivy-db
+              taskRef:
+                local:
+                  kind: ClusterTask
+                  name: trivy-scanner
+            notification:
+              onSuccess:
+                slack:
+                  url: https://hooks.slack.com/services/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
+                  message: "현재 진행중인 PipelineRun : ($INTEGRATION_JOB_NAME)\n현재 단계 : $JOB_NAME\n상태 : 완료"
+              onFailure:
+                slack:
+                  url: https://hooks.slack.com/services/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
+                  message: "현재 진행중인 PipelineRun : ($INTEGRATION_JOB_NAME)\n현재 단계 : $JOB_NAME\n상태 : 실패"
+          - after:
+              - podman-build
+            name: argo-upload
+            tektonTask:
+              params:
+                - name: GIT_USER_NAME
+                  stringVal: Administrator
+                - name: GIT_USER_EMAIL
+                  stringVal: admin@example.com
+                - name: GIT_SCRIPT
+                  stringVal: >
+
+                    git config --global http.sslVerify false
+
+                    git clone https://${GIT_API_URL}/${APP_REPOSITORY}
+
+                    cd ./appyaml/yaml
+
+                    rm -rf app.yaml
+
+                    cp app.yaml.template app.yaml
+
+                    sed -i "s@{{URL}}@${IMAGE_URL}/${IMAGE_NAME}:$(tasks.git-clone.results.commit)@" app.yaml
+
+                    ls -l
+
+                    git add *
+
+                    git status
+
+                    git commit -m "Images & Version Changed"
+
+                    git push
+
+                    cd $(workspaces.source.path)
+
+                    ls -l
+
+                    rm -rf ./appyaml
+
+                    rm -rf ./reviews/reviews-application/build
+                    rm -rf ./reviews/reviews-wlpcfg/servers/LibertyProjectServer/apps
+              taskRef:
+                local:
+                  kind: ClusterTask
+                  name: git-cli
+              workspaces:
+                - name: basic-auth
+                  workspace: basic-auth
+                - name: source
+                  workspace: s2i
+            notification:
+              onSuccess:
+                slack:
+                  url: https://hooks.slack.com/services/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
+                  message: "현재 진행중인 PipelineRun : ($INTEGRATION_JOB_NAME)\n현재 단계 : $JOB_NAME\n상태 : 완료"
+              onFailure:
+                slack:
+                  url: https://hooks.slack.com/services/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
+                  message: "현재 진행중인 PipelineRun : ($INTEGRATION_JOB_NAME)\n현재 단계 : $JOB_NAME\n상태 : 실패"
+          - after:
+              - trivy-check
+            name: send-mail
+            tektonTask:
+              params:
+                - name: server
+                  stringVal: server-secret
+                - name: subject
+                  stringVal: "trivy 이미지 스캐닝 완료"
+                - name: body
+                  stringVal: |
+                    CI/CD 테스크중 trivy를 통한 스캐닝이 끝났습니다.
+                    HyperCloud로 돌아오셔서 스캐닝 결과를 확인해주세요!
+                    - HyperCloud
+                - name: sender
+                  stringVal: "<junghun_byeon@tmax.co.kr>"
+                - name: recipients
+                  stringVal: "<sa_8001@jhcloud.kr>"
+              taskRef:
+                local:
+                  kind: ClusterTask
+                  name: sendmail
+          - after:
+              - argo-upload
+            name: argo-sync
+            tektonTask:
+              params:
+                - name: application-name
+                  stringVal: appyaml
+                - name: flags
+                  stringVal: '--insecure'
+              taskRef:
+                local:
+                  kind: ClusterTask
+                  name: argocd-task-sync-and-wait
+            notification:
+              onSuccess:
+                slack:
+                  url: https://hooks.slack.com/services/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
+                  message: "현재 진행중인 PipelineRun : ($INTEGRATION_JOB_NAME)\n현재 단계 : $JOB_NAME\n상태 : 완료"
+              onFailure:
+                slack:
+                  url: https://hooks.slack.com/services/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
+                  message: "현재 진행중인 PipelineRun : ($INTEGRATION_JOB_NAME)\n현재 단계 : $JOB_NAME\n상태 : 실패"
+      secrets:
+        - name: '${REGISTRY_SECRET_NAME}'
+      tlsConfig:
+        insecureSkipVerify: true
+      workspaces:
+        - name: basic-auth
+          secret:
+            secretName: my-basic-auth-secret
+        - name: s2i
+          persistentVolumeClaim:
+            claimName: 'cicd-pvc-${APP_NAME}'
+        - name: trivy-db
+          persistentVolumeClaim:
+            claimName: 'trivy-db'
+        - name: build-pvc
+          persistentVolumeClaim:
+            claimName: 'build-pvc-${APP_NAME}'
+parameters:
+  - description: Application name
+    displayName: AppName
+    name: APP_NAME
+    required: true
+    value: testapp
+    valueType: string
+  - description: Git Type (gitlab or github)
+    displayName: GitType
+    name: GIT_TYPE
+    required: true
+    value: gitlab
+    valueType: string
+  - description: 'Git API URL (e.g., http://)'
+    displayName: GitApiUrl
+    name: GIT_API_URL
+    required: false
+    value: gitlab.jhcloud.kr
+    valueType: string
+  - description: 'Git Repo. (e.g., tmax-cloud/cicd-operator)'
+    displayName: GitRepository
+    name: GIT_REPOSITORY
+    required: true
+    value: root/bookinfo
+    valueType: string
+  - description: 'Git Repo. (e.g., tmax-cloud/cicd-operator)'
+    displayName: AppYaml
+    name: APP_REPOSITORY
+    required: true
+    value: root/appyaml
+    valueType: string
+  - description: 'Git Branch (e.g., master)'
+    displayName: GitBranch
+    name: GIT_BRANCH
+    required: false
+    value: master
+    valueType: string
+  - description: ARGOCD URL
+    displayName: ArgoURL
+    name: ARGOCD_URL
+    required: true
+    value: argocd.jhcloud.kr
+    valueType: string
+  - description: ARGOCD USER
+    displayName: ArgoUSER
+    name: ARGOUSER
+    required: true
+    value: YWRtaW4=
+    valueType: string
+  - description: ARGOCD PASSWORD
+    displayName: ArgoPASS
+    name: ARGOPASS
+    required: true
+    value: dG1heEAyM0A=
+    valueType: string
+  - description: Git Token Secret Name (with 'token' key)
+    displayName: GitTokenSecret
+    name: GIT_TOKEN_SECRET
+    required: true
+    value: gitlab
+    valueType: string
+  - description: Output Image URL
+    displayName: ImageURL
+    name: IMAGE_URL
+    required: true
+    value: 'harbor.jhcloud.kr'
+    valueType: string
+  - description: Output Image NAME
+    displayName: ImageNAME
+    name: IMAGE_NAME
+    required: true
+    value: 'reviews/reviews'
+    valueType: string
+  - description: Secret for accessing image registry
+    displayName: RegistrySecret
+    name: REGISTRY_SECRET_NAME
+    required: false
+    value: ''
+    valueType: string
+  - description: Storage class for ci workspace
+    displayName: StorageClass
+    name: STORAGE_CLASS
+    required: true
+    value: nfs
+    valueType: string
+  - description: REVIEWS Port
+    displayName: 포트
+    name: REVIEWS_PORT
+    required: true
+    value: 9080
+    valueType: number
+  - description: git-clone 단계에서 사용되는 git 아이디.
+    displayName: GitID
+    name: GITID
+    required: true
+    value: 'root'
+    valueType: string
+  - description: git-clone 단계에서 사용되는 git 패스워드.
+    displayName: GitPWD
+    name: GITPWD
+    required: true
+    value: 'ios2011a'
+    valueType: string
+  - description: 소스 코드 스캔을 수행할 sonarqube의 주소.
+    displayName: URL
+    name: SONARURL
+    required: true
+    value: 'http://sonarqube.jhcloud.kr/'
+    valueType: string
+  - description: 소스 코드 스캔을 수행할 Project의 Key.
+    displayName: ProjectKey
+    name: PROJECTKEY
+    required: true
+    value: 'cicd'
+    valueType: string
+  - description: 소스 코드 스캔을 수행할 Project의 Version.
+    displayName: ProjectVersion
+    name: PROJECTVERSION
+    required: true
+    value: '1.0'
+    valueType: string
+  - description: 스캔을 수행할 코드 경로
+    displayName: SourceDIR
+    name: SOURCEDIR
+    required: true
+    value: './reviews/reviews-application/src/main/java/application/rest/'
+    valueType: string
+  - description: Deployment environment variable in JSON object form
+    displayName: DeployEnvJson
+    name: DEPLOY_ENV_JSON
+    required: false
+    value: '{}'
+    valueType: string
+plans:
+  - bindable: false
+    description: CI/CD 테스트를 위한 템플릿입니다. reviews pod를 배포합니다.
+    name: reviews-test
+provider: junghun_byeon
+recommend: false
+shortDescription: TmaxCloud CI/CD Test Sample
+urlDescription: 'https://www.tmax.co.kr/tmaxcloud'
