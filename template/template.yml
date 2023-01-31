@@ -232,7 +232,7 @@ objects:
 
                     git clone https://${GIT_API_URL}/${APP_REPOSITORY}
 
-                    cd ./appyaml/yaml
+                    cd ./appyaml/
 
                     rm -rf app.yaml
 
