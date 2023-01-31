@@ -97,5 +97,6 @@ STORAGE_CLASS : Storage Class 선택
 - 정상적으로 생성이 되었는지 확인 (상태 Ready 확인)
     - 상태 Ready가 아닌 경우
         - 수정 > YAML View을 통해서 원인 파악
+        
 ![09](./img/09.png)
 - Ready인 것을 확인 할 경우 푸시 이벤트 발생
