@@ -38,7 +38,7 @@ spec:
 - [<span style='color:yellow'>Template</span>](https://git.jhcloud.kr/junghun_byeon/bookinfo-cicd-tmaxcloud/src/branch/main/template) 프로젝트에서 [<span style='color:yellow'>"app.yaml.template"</span>](https://git.jhcloud.kr/junghun_byeon/bookinfo-cicd-tmaxcloud/src/branch/main/template/app.yaml.template)을 받아 수행하는 환경의 Gitlab에 추가.
 - <span style='color:yellow'>프로젝트 명, 파일 명, 파일 경로 모두 동일하게 생성</span> (수정을 원하는 경우 template.yaml 에서 수정 필요)
 
-## ArgoCD Application 등록
+## ArgoCD Repositories 등록
 ![03](./img/03.png)
 - ArgoCD에 접속 및 로그인
 - Settings > Repositories > Connect repo using HTTPS 메뉴에서 생성한 <span style='color:yellow'>appyaml</span> 프로젝트 등록
@@ -48,6 +48,13 @@ spec:
     - 상태가 <span style='color:red'>Failed</span>인 경우
         - 등록한 Repository URL 확인
         - 사설 인증서를 사용하는 Gitlab 환경이면 Repository 추가시 Skip server verification 체크
+
+## ArgoCD Application 등록
+![10](./img/10.png)
+- NEW APP을 통해 추가
+- 추가시 AUTO-CREATE NAMESPACE 체크 (Optional)
+  - 사용할 Namespace가 이미 생성되어 있을 경우 불필요
+
 
 ## Sonarqube 프로젝트 추가 (Optional)
 ![07](./img/07.png)
