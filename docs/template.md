@@ -96,3 +96,26 @@ objects:
 ```
 - 필요 오브젝트를 생성하는 부분
 - 이 부분에 pvc, secret, configmap, integrationconfig 등 정의
+
+## integrationconfig
+> [<span style="color:yellow">"문서" </span>](https://github.com/tmax-cloud/cicd-operator/blob/master/docs/integration_config.md)에 보다 더 상세한 설명이 있음
+```
+  - apiVersion: cicd.tmax.io/v1
+    kind: IntegrationConfig
+    metadata:
+      labels:
+        app: '${APP_NAME}'
+      name: '${APP_NAME}-config'
+    spec:
+      git:
+        apiUrl: 'https://${GIT_API_URL}'
+        repository: '${GIT_REPOSITORY}'
+        token:
+          valueFrom:
+            secretKeyRef:
+              key: token
+              name: '${GIT_TOKEN_SECRET}'
+        type: '${GIT_TYPE}'
+```
+- git : 소스 코드 변경시 감지를 위한 tekton triggering, webhook 등을 위한 git 설정
+- type : gitlab, gitea, github 지원
