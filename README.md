@@ -104,7 +104,7 @@ GITPWD : 수행하는 환경의 Gitlab 패스워드
 GIT_API_URL : 수행하는 환경의 Gitlab 주소 (https:// 제외)
 GIT_BRANCH : bookinfo source가 있는 branch
 GIT_REPOSITORY : bookinfo source가 있는 프로젝트 주소 (ex. root/bookinfo)
-GIT_TOKEN_SECRET : gitlab token을 저장한 secret의 이름 (사실상 불필요하나 없을 경우 cicd-operator 설정상 에러 발생)
+GIT_TOKEN_SECRET : gitlab token을 저장한 secret의 이름 (triggering, webhook을 위한 필수)
 IMAGE_NAME : 빌드 된 이미지가 저장될 harbor 프로젝트 (ex. reviews/reviews)
 IMAGE_URL : 빌드 된 이미지가 저장될 harbor의 주소 (https:// 제외)
 PROJECTKEY : 소스 코드를 분석할 sonaqube 프로젝트의 이름
