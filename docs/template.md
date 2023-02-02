@@ -119,3 +119,79 @@ objects:
 ```
 - git : 소스 코드 변경시 감지를 위한 tekton triggering, webhook 등을 위한 git 설정
 - type : gitlab, gitea, github 지원
+
+### integrationconfig - jobs
+```
+jobs:
+        postSubmit:
+          - name: git-clone
+            tektonTask:
+              params:
+                - name: url
+                  stringVal: 'https://${GIT_API_URL}/${GIT_REPOSITORY}'
+                - name: revision
+                  stringVal: '${GIT_BRANCH}'
+                - name: deleteExisting
+                  stringVal: 'false'
+                - name: sslVerify
+                  stringVal: 'true'
+              taskRef:
+                local:
+                  kind: ClusterTask
+                  name: git-clone
+              workspaces:
+                - name: output
+                  workspace: s2i
+            notification:
+              onSuccess:
+                slack:
+                  url: https://hooks.slack.com/services/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
+                  message: "현재 진행중인 PipelineRun : ($INTEGRATION_JOB_NAME)\n현재 단계 : $JOB_NAME\n상태 : 완료"
+              onFailure:
+                slack:
+                  url: https://hooks.slack.com/services/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
+                  message: "현재 진행중인 PipelineRun : ($INTEGRATION_JOB_NAME)\n현재 단계 : $JOB_NAME\n상태 : 실패"
+・・・・ 이하 생략
+          - after:
+              - sonarqube-scanner
+            name: podman-build
+            tektonTask:
+              params:
+                - name: url
+                  stringVal: '${IMAGE_URL}'
+                - name: image
+                  stringVal: '${IMAGE_NAME}'
+                - name: tag
+                  stringVal: $(tasks.git-clone.results.commit)
+                - name: tls
+                  stringVal: 'false'
+              taskRef:
+                local:
+                  kind: ClusterTask
+                  name: buildtask
+              workspaces:
+                - name: source
+                  workspace: s2i
+                - name: build-pvc
+                  workspace: build-pvc
+            notification:
+              onSuccess:
+                slack:
+                  url: https://hooks.slack.com/services/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
+                  message: "현재 진행중인 PipelineRun : ($INTEGRATION_JOB_NAME)\n현재 단계 : $JOB_NAME\n상태 : 완료"
+              onFailure:
+                slack:
+                  url: https://hooks.slack.com/services/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
+                  message: "현재 진행중인 PipelineRun : ($INTEGRATION_JOB_NAME)\n현재 단계 : $JOB_NAME\n상태 : 실패"
+・・・・ 이하 생략
+```
+- postSubmit.name : HyperCloud Console 상에서 표기되는 각 Task의 이름
+- tektonTask : Task에 수행에 필요한 정보
+- params : task에 선언되어 있는 params에 값을 선언
+- params.name : task에 선언되어 있는 params 변수 이름
+- params.stringVal : 선택한 params 변수에 넣을 값 (stringVal(문자,숫자) or arrayVal(배열) 두가지 지원)
+- taskRef : Task 지정
+- local.kind : ClusterTask or Task 중 선택
+- local.name : 사용할 Task의 이름 입력
+- workspaces : 해당 Task Pod가 마운트하여 사용할 workspace (workspace는 pvc, cm 등 이며 아래 부분에 참고)
+- notification : 
