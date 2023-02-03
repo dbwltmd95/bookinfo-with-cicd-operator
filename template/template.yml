@@ -271,12 +271,10 @@ objects:
                 - name: server
                   stringVal: server-secret
                 - name: subject
-                  stringVal: "trivy 이미지 스캐닝 완료"
+                  stringVal: "trivy 이미지 스캐닝 결과"
                 - name: body
                   stringVal: |
-                    CI/CD 테스크중 trivy를 통한 스캐닝이 끝났습니다.
-                    HyperCloud로 돌아오셔서 스캐닝 결과를 확인해주세요!
-                    - HyperCloud
+                    $(tasks.trivy-check.results.scan)
                 - name: sender
                   stringVal: "<junghun_byeon@tmax.co.kr>"
                 - name: recipients
