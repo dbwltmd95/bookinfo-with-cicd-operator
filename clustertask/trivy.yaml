@@ -31,6 +31,9 @@ spec:
     - name: IMAGE_PATH
       description: Image or Path to be scanned by trivy.
       type: string
+  results:
+    - name: scan
+      description: scan result
   steps:
     - name: trivy-scan
       image: $(params.TRIVY_IMAGE)
@@ -38,9 +41,10 @@ spec:
       script: |
         #!/usr/bin/env sh
           export TRIVY_NON_SSL=true
-          cmd="trivy --cache-dir . --skip-update $* $(params.IMAGE_PATH)"
+          cmd="trivy --severity HIGH,CRITICAL --output scan.txt --cache-dir . --skip-update $* $(params.IMAGE_PATH)"
           echo "Running trivy task with command below"
           echo "$cmd"
           eval "$cmd"
+          printf "%s" "$(cat ./scan.txt)" > "$(results.scan.path)"
       args:
         - "$(params.ARGS)"
