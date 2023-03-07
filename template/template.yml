@@ -544,7 +544,6 @@ objects:
         - name: podmanconf
           configmap:
             name: 'podmanconf'
-          subpath: storage.conf
 parameters:
   - description: Application name
     displayName: AppName
