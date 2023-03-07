@@ -53,6 +53,3 @@ spec:
   - description: build file
     name: build-pvc
     mountPath: /root/buildfile
-  - description: image file
-    name: image-pvc
-    mountPath: /var/lib/containers
