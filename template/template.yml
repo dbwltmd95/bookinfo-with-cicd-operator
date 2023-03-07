@@ -39,6 +39,17 @@ objects:
           storage: 1Gi
       storageClassName: '${STORAGE_CLASS}'
   - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      name: 'image-pvc-${APP_NAME}'
+    spec:
+      accessModes:
+        - ReadWriteMany
+      resources:
+        requests:
+          storage: 1Gi
+      storageClassName: '${STORAGE_CLASS}'
+  - apiVersion: v1
     kind: ConfigMap
     metadata:
       name: argocd-env-configmap
@@ -169,6 +180,8 @@ objects:
                   workspace: s2i
                 - name: build-pvc
                   workspace: build-pvc
+                - name: image-pvc
+                  workspace: image-pvc
             notification:
               onSuccess:
                 slack:
@@ -322,6 +335,9 @@ objects:
         - name: build-pvc
           persistentVolumeClaim:
             claimName: 'build-pvc-${APP_NAME}'
+        - name: image-pvc
+          persistentVolumeClaim:
+            claimName: 'image-pvc-${APP_NAME}'
 parameters:
   - description: Application name
     displayName: AppName
