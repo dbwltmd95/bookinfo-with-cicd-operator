@@ -215,7 +215,7 @@ objects:
                 - name: GIT_SCRIPT
                   stringVal: >
 
-                    git config --global http.sslVerify false
+                    git config --global http.sslVerify true
 
                     git clone https://${GIT_API_URL}/${APP_REPOSITORY}
 
