@@ -57,5 +57,5 @@ spec:
     name: image-pvc
     mountPath: /var/lib/containers/storage
   - description: podman conf file
-    name: podman-conf
+    name: podmanconf
     mountPath: /etc/containers/storage.conf
