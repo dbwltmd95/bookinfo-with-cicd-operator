@@ -562,13 +562,13 @@ parameters:
     displayName: GitApiUrl
     name: GIT_API_URL
     required: false
-    value: gitlab.jhcloud.kr
+    value: gitlab.dev-cloudps.com
     valueType: string
   - description: 'Git Repo. (e.g., tmax-cloud/cicd-operator)'
     displayName: GitRepository
     name: GIT_REPOSITORY
     required: true
-    value: root/bookinfo
+    value: root/Bookinfo
     valueType: string
   - description: 'Git Repo. (e.g., tmax-cloud/cicd-operator)'
     displayName: AppYaml
@@ -580,13 +580,13 @@ parameters:
     displayName: GitBranch
     name: GIT_BRANCH
     required: false
-    value: master
+    value: main
     valueType: string
   - description: ARGOCD URL
     displayName: ArgoURL
     name: ARGOCD_URL
     required: true
-    value: argocd.jhcloud.kr
+    value: argocd.dev-cloudps.com
     valueType: string
   - description: ARGOCD USER
     displayName: ArgoUSER
@@ -598,7 +598,7 @@ parameters:
     displayName: ArgoPASS
     name: ARGOPASS
     required: true
-    value: dG1heEAyM0A=
+    value: cGxhdGZvcm1wcw==
     valueType: string
   - description: Git Token Secret Name (with 'token' key)
     displayName: GitTokenSecret
@@ -610,7 +610,7 @@ parameters:
     displayName: ImageURL
     name: IMAGE_URL
     required: true
-    value: 'harbor.jhcloud.kr'
+    value: 'harbor.dev-cloudps.com'
     valueType: string
   - description: Output Image NAME
     displayName: ImageNAME
@@ -652,7 +652,7 @@ parameters:
     displayName: URL
     name: SONARURL
     required: true
-    value: 'http://sonarqube.jhcloud.kr/'
+    value: 'http://sonarqube.dev-cloudps.com/'
     valueType: string
   - description: 소스 코드 스캔을 수행할 Project의 Key.
     displayName: ProjectKey
