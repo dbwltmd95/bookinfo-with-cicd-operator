@@ -133,7 +133,7 @@ objects:
                 - name: SONAR_LOGIN_KEY
                   stringVal: "admin"
                 - name: SONAR_PASSWORD_KEY
-                  stringVal: "tmax@23!!"
+                  stringVal: "platformps"
               taskRef:
                 local:
                   kind: ClusterTask
@@ -423,7 +423,7 @@ parameters:
     displayName: GitPWD
     name: GITPWD
     required: true
-    value: 'ios2011a'
+    value: 'platformps'
     valueType: string
   - description: 소스 코드 스캔을 수행할 sonarqube의 주소.
     displayName: URL
