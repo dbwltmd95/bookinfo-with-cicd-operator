@@ -41,7 +41,7 @@ spec:
       script: |
         #!/usr/bin/env sh
           export TRIVY_NON_SSL=true
-          cmd="trivy --cache-dir . $* --severity HIGH,CRITICAL --output scan.txt --skip-update $(params.IMAGE_PATH)"
+          cmd="trivy --cache-dir . $* --severity MEDIUM,HIGH,CRITICAL --output scan.txt --skip-update $(params.IMAGE_PATH)"
           echo "Running trivy task with command below"
           echo "$cmd"
           eval "$cmd"
